@@ -32,18 +32,49 @@ enum TransitionType { material, cupertino, fade }
 
 class RoutePage<T extends Object?> extends Page<T> {
   RoutePage({
+    required Widget child,
+    required String name,
+    String? id,
+    TransitionType transitionType = TransitionType.material,
+  }) : this._(
+          child: child,
+          name: name,
+          id: id,
+          transitionType: transitionType,
+        );
+
+  RoutePage._({
     required this.child,
     required String name,
     String? id,
-    this.completer,
+    Completer<T?>? completer,
+    void Function(RoutePage<T> page, Object? result)? onPopped,
+    void Function(RoutePage<T> page, Object error, StackTrace stackTrace)?
+        onPopError,
+    PopInvokedWithResultCallback<T>? onPopInvoked,
     this.transitionType = TransitionType.material,
   })  : id = id ?? name,
-        super(name: name, key: ValueKey(id ?? name));
+        _completer = completer,
+        _onPopped = onPopped,
+        _onPopError = onPopError,
+        super(
+          name: name,
+          key: ValueKey(id ?? name),
+          onPopInvoked: onPopInvoked ?? _defaultOnPopInvoked,
+        );
 
   final Widget child;
   final String id;
-  final Completer<T?>? completer;
+  final Completer<T?>? _completer;
+  final void Function(RoutePage<T> page, Object? result)? _onPopped;
+  final void Function(
+    RoutePage<T> page,
+    Object error,
+    StackTrace stackTrace,
+  )? _onPopError;
   final TransitionType transitionType;
+
+  static void _defaultOnPopInvoked<T>(bool didPop, T? result) {}
 
   @override
   Route<T> createRoute(BuildContext context) {
@@ -66,12 +97,31 @@ class RoutePage<T extends Object?> extends Page<T> {
         route = MaterialPageRoute<T>(builder: (_) => child, settings: this);
     }
 
-    unawaited(route.popped.then(complete, onError: completeError));
+    unawaited(
+      route.popped.then(
+        (result) {
+          final handler = _onPopped;
+          if (handler == null) {
+            complete(result);
+            return;
+          }
+          handler(this, result);
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          final handler = _onPopError;
+          if (handler == null) {
+            completeError(error, stackTrace);
+            return;
+          }
+          handler(this, error, stackTrace);
+        },
+      ),
+    );
     return route;
   }
 
   void complete(Object? result) {
-    final pageCompleter = completer;
+    final pageCompleter = _completer;
     if (pageCompleter == null || pageCompleter.isCompleted) return;
 
     if (result != null && result is! T) {
@@ -90,7 +140,7 @@ class RoutePage<T extends Object?> extends Page<T> {
   }
 
   void completeError(Object error, StackTrace stackTrace) {
-    final pageCompleter = completer;
+    final pageCompleter = _completer;
     if (pageCompleter == null || pageCompleter.isCompleted) return;
     pageCompleter.completeError(error, stackTrace);
   }
@@ -144,6 +194,7 @@ class RouteChangeNotifier extends ChangeNotifier {
   int _nextPageId = 0;
 
   List<RoutePage<dynamic>> get pages => List.unmodifiable(_pages);
+  bool get canPop => _pages.length > 1;
 
   Future<T?> push<T extends Object?>(RoutePage<T> page) {
     final completer = Completer<T?>();
@@ -153,7 +204,7 @@ class RouteChangeNotifier extends ChangeNotifier {
   }
 
   void pop<T extends Object?>({T? result}) {
-    if (_pages.length <= 1) return;
+    if (!canPop) return;
     final page = _pages.removeLast();
     page.complete(result);
     notifyListeners();
@@ -189,14 +240,56 @@ class RouteChangeNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool popUntilRouteName(String routeName) {
+    if (_pages.isEmpty) return false;
+    if (_pages.last.name == routeName) return true;
+
+    var removedAny = false;
+    while (_pages.length > 1 && _pages.last.name != routeName) {
+      final page = _pages.removeLast();
+      page.complete(null);
+      removedAny = true;
+    }
+
+    if (removedAny) notifyListeners();
+
+    return _pages.last.name == routeName;
+  }
+
   void didRemovePage(Page<Object?> page) {
     if (page is! RoutePage<dynamic>) return;
+    if (_removePageById(page.id)) notifyListeners();
+  }
 
-    final index = _pages.indexWhere((candidate) => candidate.id == page.id);
-    if (index == -1) return;
+  void _handleRoutePopped<T extends Object?>(
+    RoutePage<T> page,
+    T? result,
+  ) {
+    final removed = _removePageById(page.id);
+    page.complete(result);
+    if (removed) notifyListeners();
+  }
 
+  void _completeRoutePopped<T extends Object?>(
+    RoutePage<T> page,
+    Object? result,
+  ) {
+    page.complete(result);
+  }
+
+  void _completeRoutePopError<T extends Object?>(
+    RoutePage<T> page,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    page.completeError(error, stackTrace);
+  }
+
+  bool _removePageById(String id) {
+    final index = _pages.indexWhere((candidate) => candidate.id == id);
+    if (index == -1) return false;
     _pages.removeAt(index);
-    notifyListeners();
+    return true;
   }
 
   RoutePage<T> _createPage<T extends Object?>(
@@ -208,13 +301,21 @@ class RouteChangeNotifier extends ChangeNotifier {
       throw ArgumentError.value(page, 'page', 'RoutePage.name is required');
     }
 
-    return RoutePage<T>(
+    late final RoutePage<T> routePage;
+    routePage = RoutePage<T>._(
       id: '$name-${_nextPageId++}',
       child: page.child,
       name: name,
-      completer: completer ?? page.completer,
+      completer: completer ?? page._completer,
+      onPopped: _completeRoutePopped<T>,
+      onPopError: _completeRoutePopError<T>,
+      onPopInvoked: (didPop, result) {
+        if (!didPop) return;
+        _handleRoutePopped(routePage, result);
+      },
       transitionType: page.transitionType,
     );
+    return routePage;
   }
 }
 
@@ -253,15 +354,24 @@ class AppRouteDelegate extends RouterDelegate<List<RoutePage<dynamic>>>
     );
   }
 
-  // FIX 2: Delegate to navigator.pop() so it handles whatever is actually
-  // on top — dialog, bottom sheet, or page — in the correct order.
-  // onDidRemovePage then handles _pages sync only when a RoutePage is removed.
+  // Android back button handling.
+  //
+  // maybePop() handles everything in correct order:
+  //   - PopScope(canPop: false) on current page → blocked, returns false
+  //   - dialog / bottom sheet on top            → closes it, returns true
+  //   - declarative RoutePage on top            → pops it, Page.onPopInvoked
+  //                                               syncs _pages immediately
+  //   - only root page left                     → returns false → minimizes app
+  //
+  // The previous router.canPop fallback between maybePop and SystemNavigator
+  // was removed because if maybePop returns false it means either:
+  //   1. Nothing left to pop  → router.canPop is false anyway, redundant
+  //   2. PopScope blocked pop → router.pop() would bypass PopScope ⚠️
   @override
   Future<bool> popRoute() async {
     final navigator = appNavigatorKey.currentState;
 
-    if (navigator != null && navigator.canPop()) {
-      navigator.pop();
+    if (navigator != null && await navigator.maybePop()) {
       return true;
     }
 
@@ -322,13 +432,12 @@ class AppNavObserver extends NavigatorObserver {
 // ─────────────────────────────────────────────
 
 extension AppRoute on WidgetRef {
-  // FIX 3: Delegate to navigator.pop() first so it handles whatever is on
-  // top — dialog, bottom sheet, or page.
-  // - Dialog/sheet on top → navigator closes it, page stack untouched.
-  //   _pages untouched ✅
-  // - RoutePage on top   → navigator pops it, Route.popped completes
-  //   the result and onDidRemovePage syncs _pages ✅
-  // - Nothing to pop     → falls back to notifier.pop() (no-op, guarded) ✅
+  // Delegate to the Navigator first so it handles whatever is on top:
+  // dialog, bottom sheet, or page.
+  //
+  // - dialog / sheet on top → closes it, _pages untouched
+  // - RoutePage on top      → pops it, Page.onPopInvoked syncs _pages
+  // - nothing to pop        → falls back to notifier.pop() (guarded by canPop)
   void pop<T>({T? result}) {
     final navigator = appNavigatorKey.currentState;
 
@@ -350,4 +459,7 @@ extension AppRoute on WidgetRef {
       read(routeProvider.notifier).replaceAll<T>(page);
 
   void removeLast(int count) => read(routeProvider.notifier).removePages(count);
+
+  bool popUntilRouteName(String routeName) =>
+      read(routeProvider.notifier).popUntilRouteName(routeName);
 }

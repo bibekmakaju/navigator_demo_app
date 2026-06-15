@@ -102,4 +102,37 @@ void main() {
     await expectLater(productResult, completion(isNull));
     expect(router.pages.map((page) => page.name), [Routes.login]);
   });
+
+  test('popUntilRouteName removes pages until route name is on top', () async {
+    final router = RouteChangeNotifier();
+    final settingsResult = router.push<String>(testPage(Routes.settings));
+    final productResult = router.push<String>(testPage(Routes.product));
+    final labResult = router.push<String>(testPage(Routes.lab));
+
+    final found = router.popUntilRouteName(Routes.settings);
+
+    expect(found, isTrue);
+    expect(router.pages.map((page) => page.name), [
+      Routes.login,
+      Routes.settings,
+    ]);
+    await expectLater(productResult, completion(isNull));
+    await expectLater(labResult, completion(isNull));
+
+    router.pop<String>(result: 'settings-result');
+    await expectLater(settingsResult, completion('settings-result'));
+  });
+
+  test('popUntilRouteName stops at root when route name is missing', () async {
+    final router = RouteChangeNotifier();
+    final settingsResult = router.push<String>(testPage(Routes.settings));
+    final productResult = router.push<String>(testPage(Routes.product));
+
+    final found = router.popUntilRouteName('missing');
+
+    expect(found, isFalse);
+    expect(router.pages.map((page) => page.name), [Routes.login]);
+    await expectLater(settingsResult, completion(isNull));
+    await expectLater(productResult, completion(isNull));
+  });
 }

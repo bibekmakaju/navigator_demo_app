@@ -145,6 +145,20 @@ void main() {
     expect(find.text('Route Lab returned a result.'), findsOneWidget);
   });
 
+  testWidgets('Android back pops a pushed page', (tester) async {
+    await replaceStackWithHome(tester);
+
+    await tapVisibleText(tester, 'Open Route Lab');
+    expect(find.text('Route Lab'), findsOneWidget);
+
+    final handled = await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(handled, isTrue);
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Route Lab'), findsNothing);
+  });
+
   testWidgets('Route Lab can replace itself with Product', (tester) async {
     await replaceStackWithHome(tester);
 
