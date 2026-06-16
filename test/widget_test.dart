@@ -1,10 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:navigation_router_demo/main.dart';
 
 void main() {
-  Future<void> replaceStackWithHome(WidgetTester tester) async {
-    await tester.pumpWidget(const RouterDemoBootstrap());
+  Future<void> pumpApp(WidgetTester tester) async {
+    await tester.pumpWidget(const ProviderScope(child: RouterDemoBootstrap()));
     await tester.pumpAndSettle();
+  }
+
+  Future<void> replaceStackWithHome(WidgetTester tester) async {
+    await pumpApp(tester);
 
     await tester.tap(find.text('Replace stack with Home'));
     await tester.pumpAndSettle();
@@ -26,8 +31,7 @@ void main() {
   }
 
   testWidgets('shows the login screen on startup', (tester) async {
-    await tester.pumpWidget(const RouterDemoBootstrap());
-    await tester.pumpAndSettle();
+    await pumpApp(tester);
 
     expect(find.text('Custom Router Demo'), findsOneWidget);
     expect(find.text('Initial route: login'), findsOneWidget);
@@ -44,8 +48,7 @@ void main() {
   });
 
   testWidgets('pushes Home and receives its pop result', (tester) async {
-    await tester.pumpWidget(const RouterDemoBootstrap());
-    await tester.pumpAndSettle();
+    await pumpApp(tester);
 
     await tester.tap(find.text('Push Home and wait for result'));
     await tester.pumpAndSettle();
@@ -145,6 +148,36 @@ void main() {
     expect(find.text('Route Lab returned a result.'), findsOneWidget);
   });
 
+  testWidgets('Overlay Toast Lab shows toast through the Navigator overlay',
+      (tester) async {
+    await replaceStackWithHome(tester);
+
+    await tapVisibleText(tester, 'Open Overlay Toast Lab');
+    expect(find.text('Overlay Toast Lab'), findsOneWidget);
+
+    await tapVisibleText(tester, 'Show success toast');
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Profile saved through an OverlayEntry.'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Profile saved through an OverlayEntry.'), findsNothing);
+
+    await tapVisibleText(tester, 'Show top toast');
+    await tester.pump(const Duration(milliseconds: 200));
+
+    final topToast = find.text(
+      'This toast was created with ToastPlacement.top().',
+    );
+    expect(topToast, findsOneWidget);
+    expect(tester.getTopLeft(topToast).dy, lessThan(160));
+
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('Android back pops a pushed page', (tester) async {
     await replaceStackWithHome(tester);
 
@@ -170,5 +203,68 @@ void main() {
     expect(find.text('Product'), findsOneWidget);
     expect(find.text('Replacement Product'), findsOneWidget);
     expect(find.text('LAB-4004'), findsOneWidget);
+  });
+
+  testWidgets('Route Lab shows the current stack dialog', (tester) async {
+    await replaceStackWithHome(tester);
+
+    await tapVisibleText(tester, 'Open Route Lab');
+    await tapVisibleText(tester, 'Show current stack dialog');
+
+    expect(find.text('Current route stack'), findsOneWidget);
+    expect(find.text('home -> lab'), findsOneWidget);
+  });
+
+  testWidgets('Route Lab can replace until Settings by route name',
+      (tester) async {
+    await replaceStackWithHome(tester);
+
+    await tapVisibleText(tester, 'Open Route Lab');
+    await tapVisibleText(tester, 'Push two pages, replace until Settings');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Replaced from the nearest Settings route back to Route Lab.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('Route Lab starts checkout flow and receives null result',
+      (tester) async {
+    await replaceStackWithHome(tester);
+
+    await tapVisibleText(tester, 'Open Route Lab');
+    await tapVisibleText(tester, 'Start checkout flow');
+
+    expect(find.text('Cart'), findsWidgets);
+
+    await tapVisibleText(tester, 'Push Address and wait');
+    expect(find.text('Address'), findsWidgets);
+
+    await tapVisibleText(tester, 'Pop without result');
+    expect(find.text('Cart'), findsWidgets);
+
+    await tapVisibleText(tester, 'Pop without result');
+    expect(find.text('Route Lab'), findsOneWidget);
+  });
+
+  testWidgets('Route Lab builds a deep checkout stack', (tester) async {
+    await replaceStackWithHome(tester);
+
+    await tapVisibleText(tester, 'Open Route Lab');
+    await tapVisibleText(tester, 'Build full checkout stack');
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Review'), findsWidgets);
+
+    await tapVisibleText(tester, 'Show checkout stack');
+
+    expect(find.text('Checkout stack'), findsOneWidget);
+    expect(
+      find.text('home -> lab -> cart -> address -> payment -> review'),
+      findsOneWidget,
+    );
   });
 }

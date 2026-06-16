@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:navigation_router_demo/app_router.dart';
 import 'package:navigation_router_demo/models/navigation_results.dart';
 import 'package:navigation_router_demo/pages/login_view.dart';
+import 'package:navigation_router_demo/pages/overlay_toast_lab_view.dart';
 import 'package:navigation_router_demo/pages/product_view.dart';
 import 'package:navigation_router_demo/pages/route_lab_view.dart';
 import 'package:navigation_router_demo/pages/settings_view.dart';
@@ -99,6 +100,18 @@ class _HomeViewState extends ConsumerState<HomeView> {
     if (!mounted) return;
     setState(() {
       _lastEvent = result ?? 'Route Lab closed without result.';
+    });
+  }
+
+  void _openOverlayToastLab() {
+    unawaited(
+      ref.push<void>(
+        OverlayToastLabView.page(transitionType: TransitionType.fade),
+      ),
+    );
+
+    setState(() {
+      _lastEvent = 'Opened Overlay Toast Lab.';
     });
   }
 
@@ -322,6 +335,12 @@ class _HomeViewState extends ConsumerState<HomeView> {
             title: 'Open Route Lab',
             subtitle: 'Try replacement, full reset, and count removal cases.',
             onTap: _openRouteLab,
+          ),
+          _ActionTile(
+            icon: Icons.notifications_active_outlined,
+            title: 'Open Overlay Toast Lab',
+            subtitle: 'Test the app-wide OverlayEntry toast example.',
+            onTap: _openOverlayToastLab,
           ),
           _ActionTile(
             icon: Icons.layers_clear_outlined,

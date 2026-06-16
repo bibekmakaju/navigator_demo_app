@@ -135,4 +135,69 @@ void main() {
     await expectLater(settingsResult, completion(isNull));
     await expectLater(productResult, completion(isNull));
   });
+
+  test('replaceUntilRouteName replaces the found route and pages above it',
+      () async {
+    final router = RouteChangeNotifier();
+    final settingsResult = router.push<String>(testPage(Routes.settings));
+    final productResult = router.push<String>(testPage(Routes.product));
+
+    final replaced = router.replaceUntilRouteName(
+      Routes.settings,
+      testPage(Routes.lab),
+    );
+
+    expect(replaced, isTrue);
+    expect(router.pages.map((page) => page.name), [Routes.login, Routes.lab]);
+    await expectLater(settingsResult, completion(isNull));
+    await expectLater(productResult, completion(isNull));
+  });
+
+  test('replaceUntilRouteName uses the nearest matching route from the top',
+      () async {
+    final router = RouteChangeNotifier();
+    final firstSettingsResult = router.push<String>(testPage(Routes.settings));
+    final productResult = router.push<String>(testPage(Routes.product));
+    final secondSettingsResult = router.push<String>(testPage(Routes.settings));
+    final labResult = router.push<String>(testPage(Routes.lab));
+
+    final replaced = router.replaceUntilRouteName(
+      Routes.settings,
+      testPage(Routes.home),
+    );
+
+    expect(replaced, isTrue);
+    expect(router.pages.map((page) => page.name), [
+      Routes.login,
+      Routes.settings,
+      Routes.product,
+      Routes.home,
+    ]);
+    await expectLater(secondSettingsResult, completion(isNull));
+    await expectLater(labResult, completion(isNull));
+
+    router.removePages(3);
+    await expectLater(firstSettingsResult, completion(isNull));
+    await expectLater(productResult, completion(isNull));
+  });
+
+  test('replaceUntilRouteName does nothing when route name is missing',
+      () async {
+    final router = RouteChangeNotifier();
+    final settingsResult = router.push<String>(testPage(Routes.settings));
+
+    final replaced = router.replaceUntilRouteName(
+      'missing',
+      testPage(Routes.home),
+    );
+
+    expect(replaced, isFalse);
+    expect(router.pages.map((page) => page.name), [
+      Routes.login,
+      Routes.settings,
+    ]);
+
+    router.pop<String>(result: 'still-here');
+    await expectLater(settingsResult, completion('still-here'));
+  });
 }

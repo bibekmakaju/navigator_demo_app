@@ -3,19 +3,33 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:navigation_router_demo/app_router.dart';
+import 'package:navigation_router_demo/pages/checkout_step_view.dart';
 import 'package:navigation_router_demo/pages/login_view.dart';
+import 'package:navigation_router_demo/pages/overlay_toast_lab_view.dart';
 import 'package:navigation_router_demo/pages/product_view.dart';
 import 'package:navigation_router_demo/pages/settings_view.dart';
 
 class RouteLabView extends ConsumerStatefulWidget {
-  const RouteLabView({super.key});
+  const RouteLabView({
+    super.key,
+    this.initialMessage,
+  });
+
+  final String? initialMessage;
 
   @override
   ConsumerState<RouteLabView> createState() => _RouteLabViewState();
 }
 
 class _RouteLabViewState extends ConsumerState<RouteLabView> {
-  String _lastEvent = 'Use this page for replacement and remove-count cases.';
+  late String _lastEvent;
+
+  @override
+  void initState() {
+    super.initState();
+    _lastEvent =
+        widget.initialMessage ?? 'Use this page for stack navigation cases.';
+  }
 
   void _replaceWithSettings() {
     ref.replaceCurrent(
@@ -38,6 +52,76 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
         transitionType: TransitionType.cupertino,
       ),
     );
+  }
+
+  Future<void> _startCheckoutFlow() async {
+    final result = await ref.push<String>(
+      CheckoutStepView.page(
+        CheckoutStep.cart,
+        initialMessage: 'Checkout flow started from Route Lab.',
+        transitionType: TransitionType.cupertino,
+      ),
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _lastEvent = result ?? 'Checkout flow closed without a result.';
+    });
+  }
+
+  void _openOverlayToastLab() {
+    unawaited(
+      ref.push<void>(
+        OverlayToastLabView.page(transitionType: TransitionType.fade),
+      ),
+    );
+
+    setState(() {
+      _lastEvent = 'Opened Overlay Toast Lab.';
+    });
+  }
+
+  Future<void> _pushFullCheckoutStack() async {
+    unawaited(
+      ref.push<String>(
+        CheckoutStepView.page(
+          CheckoutStep.cart,
+          initialMessage: 'Cart was pushed as the checkout root.',
+        ),
+      ),
+    );
+    unawaited(
+      ref.push<String>(
+        CheckoutStepView.page(
+          CheckoutStep.address,
+          initialMessage: 'Address was pushed by a batch stack action.',
+        ),
+      ),
+    );
+    unawaited(
+      ref.push<String>(
+        CheckoutStepView.page(
+          CheckoutStep.payment,
+          initialMessage: 'Payment was pushed by a batch stack action.',
+        ),
+      ),
+    );
+    unawaited(
+      ref.push<String>(
+        CheckoutStepView.page(
+          CheckoutStep.review,
+          initialMessage: 'Review is now on top of a deep checkout stack.',
+        ),
+      ),
+    );
+
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+
+    if (!mounted) return;
+    setState(() {
+      _lastEvent =
+          'Built checkout stack: Cart -> Address -> Payment -> Review.';
+    });
   }
 
   Future<void> _pushTwoThenRemoveTwo() async {
@@ -67,6 +151,155 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
     if (!mounted) return;
     setState(() {
       _lastEvent = 'Pushed Settings + Product, then removed both by count.';
+    });
+  }
+
+  Future<void> _pushTwoThenPopUntilLab() async {
+    unawaited(
+      ref.push<void>(
+        RoutePage(
+          child: const SettingsView(showSaveAction: false),
+          name: Routes.settings,
+        ),
+      ),
+    );
+    unawaited(
+      ref.push<void>(
+        RoutePage(
+          child: const ProductView(
+            productId: 'LAB-6006',
+            productName: 'Pop Until Product',
+          ),
+          name: Routes.product,
+        ),
+      ),
+    );
+
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    final found = ref.popUntilRouteName(Routes.lab);
+
+    if (!mounted) return;
+    setState(() {
+      _lastEvent = found
+          ? 'Pushed Settings + Product, then popped back until Lab.'
+          : 'Lab was not found in the stack.';
+    });
+  }
+
+  Future<void> _pushTwoThenReplaceUntilSettings() async {
+    unawaited(
+      ref.push<void>(
+        RoutePage(
+          child: const SettingsView(showSaveAction: false),
+          name: Routes.settings,
+        ),
+      ),
+    );
+    unawaited(
+      ref.push<void>(
+        RoutePage(
+          child: const ProductView(
+            productId: 'LAB-7007',
+            productName: 'Replace Until Product',
+          ),
+          name: Routes.product,
+        ),
+      ),
+    );
+
+    await Future<void>.delayed(const Duration(milliseconds: 250));
+    ref.replaceUntilRouteName(
+      Routes.settings,
+      RoutePage(
+        child: const RouteLabView(
+          initialMessage:
+              'Replaced from the nearest Settings route back to Route Lab.',
+        ),
+        name: Routes.lab,
+        transitionType: TransitionType.fade,
+      ),
+    );
+  }
+
+  void _showStackDialog() {
+    final routeNames = ref
+        .read(routeProvider)
+        .pages
+        .map((page) => page.name ?? 'unnamed')
+        .join(' -> ');
+
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Current route stack'),
+        content: Text(routeNames),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showNavigationDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Stack actions'),
+        content: const Text('Choose a navigation operation to run.'),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _showStackDialog();
+            },
+            child: const Text('Show stack'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              unawaited(_pushTwoThenPopUntilLab());
+            },
+            child: const Text('Pop until Lab'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              unawaited(_pushTwoThenReplaceUntilSettings());
+            },
+            child: const Text('Replace until Settings'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop('sdsds');
+              unawaited(_startCheckoutFlow());
+            },
+            child: const Text('Checkout flow'),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              unawaited(_pushFullCheckoutStack());
+            },
+            child: const Text('Full checkout stack'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _tryReplaceUntilMissingRoute() {
+    final found = ref.replaceUntilRouteName(
+      'missing-route',
+      CheckoutStepView.page(CheckoutStep.success),
+    );
+
+    setState(() {
+      _lastEvent = found
+          ? 'Unexpectedly found missing-route.'
+          : 'Missing route was not found; replaceUntil left the stack alone.';
     });
   }
 
@@ -106,10 +339,58 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
             onTap: _replaceWithProduct,
           ),
           _LabActionTile(
+            icon: Icons.shopping_cart_outlined,
+            title: 'Start checkout flow',
+            subtitle: 'Pushes Cart and waits for a final String result.',
+            onTap: _startCheckoutFlow,
+          ),
+          _LabActionTile(
+            icon: Icons.notifications_active_outlined,
+            title: 'Open overlay toast lab',
+            subtitle: 'Tests OverlayEntry toast messages above this Navigator.',
+            onTap: _openOverlayToastLab,
+          ),
+          _LabActionTile(
+            icon: Icons.account_tree_outlined,
+            title: 'Build full checkout stack',
+            subtitle: 'Pushes Cart -> Address -> Payment -> Review.',
+            onTap: _pushFullCheckoutStack,
+          ),
+          _LabActionTile(
             icon: Icons.layers_clear_outlined,
             title: 'Push two pages, remove two',
             subtitle: 'Demonstrates count-wise removal while keeping Lab.',
             onTap: _pushTwoThenRemoveTwo,
+          ),
+          _LabActionTile(
+            icon: Icons.low_priority,
+            title: 'Push two pages, pop until Lab',
+            subtitle: 'Stacks Settings + Product, then returns to Lab by name.',
+            onTap: _pushTwoThenPopUntilLab,
+          ),
+          _LabActionTile(
+            icon: Icons.find_replace,
+            title: 'Push two pages, replace until Settings',
+            subtitle: 'Replaces the found Settings route and pages above it.',
+            onTap: _pushTwoThenReplaceUntilSettings,
+          ),
+          _LabActionTile(
+            icon: Icons.search_off_outlined,
+            title: 'Try replaceUntil missing route',
+            subtitle: 'Shows the false/no-op branch without changing pages.',
+            onTap: _tryReplaceUntilMissingRoute,
+          ),
+          _LabActionTile(
+            icon: Icons.account_tree_outlined,
+            title: 'Show current stack dialog',
+            subtitle: 'Displays the live Navigator page list by route name.',
+            onTap: _showStackDialog,
+          ),
+          _LabActionTile(
+            icon: Icons.rule_folder_outlined,
+            title: 'Open stack action dialog',
+            subtitle: 'Runs stack examples from an AlertDialog.',
+            onTap: _showNavigationDialog,
           ),
           _LabActionTile(
             icon: Icons.restart_alt,
