@@ -27,15 +27,20 @@ class RoutePage<T extends Object?> extends Page<T> {
   RoutePage({
     required this.child,
     required String name,
+    super.arguments,
     this.transitionType = TransitionType.material,
   })  : id = name,
         _complete = null,
-        super(name: name, key: ValueKey(name));
+        super(
+          name: name,
+          key: ValueKey(name),
+        );
 
   RoutePage._({
     required this.child,
     required String name,
     required this.id,
+    required super.arguments,
     required this.transitionType,
     Completer<T?>? completer,
     PopInvokedWithResultCallback<T>? onPop,
@@ -235,6 +240,7 @@ class RouteChangeNotifier extends ChangeNotifier {
       id: '$name-${_nextPageId++}',
       child: page.child,
       name: name,
+      arguments: page.arguments,
       completer: completer,
       transitionType: page.transitionType,
       onPop: (didPop, result) {
@@ -347,42 +353,53 @@ class AppNavObserver extends NavigatorObserver {
   }
 }
 
-extension AppRoute on WidgetRef {
-  void pop<T>({T? result}) {
-    final navigator = appNavigatorKey.currentState;
+extension AppRoute on BuildContext {
+  RouteChangeNotifier get _router {
+    return ProviderScope.containerOf(this, listen: false)
+        .read(routeProvider.notifier);
+  }
 
-    if (navigator != null && navigator.canPop()) {
+  List<RoutePage<dynamic>> get routePages {
+    return ProviderScope.containerOf(this, listen: false)
+        .read(routeProvider)
+        .pages;
+  }
+
+  void pop<T extends Object?>({T? result}) {
+    final navigator = Navigator.of(this);
+
+    if (navigator.canPop()) {
       navigator.pop(result);
       return;
     }
 
-    read(routeProvider.notifier).pop<T>(result: result);
+    _router.pop<T>(result: result);
   }
 
   Future<T?> push<T extends Object?>(RoutePage<T> page) {
-    return read(routeProvider.notifier).push<T>(page);
+    return _router.push<T>(page);
   }
 
   void replaceCurrent<T extends Object?>(RoutePage<T> page) {
-    read(routeProvider.notifier).replaceCurrent<T>(page);
+    _router.replaceCurrent<T>(page);
   }
 
   void replaceAll<T extends Object?>(RoutePage<T> page) {
-    read(routeProvider.notifier).replaceAll<T>(page);
+    _router.replaceAll<T>(page);
   }
 
   void removeLast(int count) {
-    read(routeProvider.notifier).removePages(count);
+    _router.removePages(count);
   }
 
   bool popUntilRouteName(String routeName) {
-    return read(routeProvider.notifier).popUntilRouteName(routeName);
+    return _router.popUntilRouteName(routeName);
   }
 
   bool replaceUntilRouteName<T extends Object?>(
     String routeName,
     RoutePage<T> page,
   ) {
-    return read(routeProvider.notifier).replaceUntilRouteName(routeName, page);
+    return _router.replaceUntilRouteName(routeName, page);
   }
 }

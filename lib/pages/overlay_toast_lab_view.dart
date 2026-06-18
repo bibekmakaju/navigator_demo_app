@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:navigation_router_demo/app_router.dart';
 import 'package:navigation_router_demo/app_toast.dart';
 
-class OverlayToastLabView extends ConsumerStatefulWidget {
+class OverlayToastLabView extends StatefulWidget {
   const OverlayToastLabView({super.key});
 
   static RoutePage<void> page({
@@ -17,11 +16,10 @@ class OverlayToastLabView extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<OverlayToastLabView> createState() =>
-      _OverlayToastLabViewState();
+  State<OverlayToastLabView> createState() => _OverlayToastLabViewState();
 }
 
-class _OverlayToastLabViewState extends ConsumerState<OverlayToastLabView> {
+class _OverlayToastLabViewState extends State<OverlayToastLabView> {
   String _lastEvent = 'Choose a toast example.';
 
   @override
@@ -181,11 +179,8 @@ class _OverlayToastLabViewState extends ConsumerState<OverlayToastLabView> {
   }
 
   void _showStackDialog() {
-    final routeNames = ref
-        .read(routeProvider)
-        .pages
-        .map((page) => page.name ?? 'unnamed')
-        .join(' -> ');
+    final routeNames =
+        context.routePages.map((page) => page.name ?? 'unnamed').join(' -> ');
 
     showDialog<void>(
       context: context,
@@ -203,7 +198,7 @@ class _OverlayToastLabViewState extends ConsumerState<OverlayToastLabView> {
   }
 
   void _popPage() {
-    ref.pop<void>();
+    context.pop<void>();
   }
 
   @override

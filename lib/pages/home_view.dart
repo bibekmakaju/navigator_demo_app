@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:navigation_router_demo/app_router.dart';
 import 'package:navigation_router_demo/models/navigation_results.dart';
 import 'package:navigation_router_demo/pages/login_view.dart';
@@ -10,7 +9,7 @@ import 'package:navigation_router_demo/pages/product_view.dart';
 import 'package:navigation_router_demo/pages/route_lab_view.dart';
 import 'package:navigation_router_demo/pages/settings_view.dart';
 
-class HomeView extends ConsumerStatefulWidget {
+class HomeView extends StatefulWidget {
   const HomeView({
     super.key,
     this.canReturnToLogin = false,
@@ -19,14 +18,14 @@ class HomeView extends ConsumerStatefulWidget {
   final bool canReturnToLogin;
 
   @override
-  ConsumerState<HomeView> createState() => _HomeViewState();
+  State<HomeView> createState() => _HomeViewState();
 }
 
-class _HomeViewState extends ConsumerState<HomeView> {
+class _HomeViewState extends State<HomeView> {
   String _lastEvent = 'Choose a navigation action.';
 
   Future<void> _openProductForResult() async {
-    final result = await ref.push<ProductSelection>(
+    final result = await context.push<ProductSelection>(
       RoutePage(
         child: const ProductView(
           productId: 'SKU-1001',
@@ -46,7 +45,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   Future<void> _openSettingsForResult() async {
-    final result = await ref.push<SettingsResult>(
+    final result = await context.push<SettingsResult>(
       RoutePage(
         child: const SettingsView(),
         name: Routes.settings,
@@ -64,7 +63,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
 
   void _openSettingsWithoutWaiting() {
     unawaited(
-      ref.push<void>(
+      context.push<void>(
         RoutePage(
           child: const SettingsView(showSaveAction: false),
           name: Routes.settings,
@@ -79,7 +78,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   void _replaceCurrentWithSettings() {
-    ref.replaceCurrent(
+    context.replaceCurrent(
       RoutePage(
         child: const SettingsView(showReplaceHomeAction: true),
         name: Routes.settings,
@@ -89,7 +88,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   Future<void> _openRouteLab() async {
-    final result = await ref.push<String>(
+    final result = await context.push<String>(
       RoutePage(
         child: const RouteLabView(),
         name: Routes.lab,
@@ -105,7 +104,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
 
   void _openOverlayToastLab() {
     unawaited(
-      ref.push<void>(
+      context.push<void>(
         OverlayToastLabView.page(transitionType: TransitionType.fade),
       ),
     );
@@ -117,7 +116,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
 
   Future<void> _pushTwoThenRemoveOne() async {
     unawaited(
-      ref.push<void>(
+      context.push<void>(
         RoutePage(
           child: const SettingsView(showSaveAction: false),
           name: Routes.settings,
@@ -125,7 +124,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
       ),
     );
     unawaited(
-      ref.push<void>(
+      context.push<void>(
         RoutePage(
           child: const ProductView(
             productId: 'SKU-2002',
@@ -137,9 +136,9 @@ class _HomeViewState extends ConsumerState<HomeView> {
     );
 
     await Future<void>.delayed(const Duration(milliseconds: 250));
-    ref.removeLast(1);
-
     if (!mounted) return;
+
+    context.removeLast(1);
     setState(() {
       _lastEvent = 'Pushed Settings + Product, then removed Product.';
     });
@@ -147,7 +146,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
 
   Future<void> _pushThreeThenRemoveThree() async {
     unawaited(
-      ref.push<void>(
+      context.push<void>(
         RoutePage(
           child: const SettingsView(showSaveAction: false),
           name: Routes.settings,
@@ -155,7 +154,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
       ),
     );
     unawaited(
-      ref.push<void>(
+      context.push<void>(
         RoutePage(
           child: const ProductView(
             productId: 'SKU-3003',
@@ -166,7 +165,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
       ),
     );
     unawaited(
-      ref.push<void>(
+      context.push<void>(
         RoutePage(
           child: const ProductView(
             productId: 'SKU-4004',
@@ -178,9 +177,9 @@ class _HomeViewState extends ConsumerState<HomeView> {
     );
 
     await Future<void>.delayed(const Duration(milliseconds: 250));
-    ref.removeLast(3);
-
     if (!mounted) return;
+
+    context.removeLast(3);
     setState(() {
       _lastEvent = 'Pushed three pages, then removed all three by count.';
     });
@@ -197,7 +196,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
       return;
     }
 
-    ref.pop<void>();
+    context.pop<void>();
     setState(() {
       _lastEvent = 'Tried to pop root Home. Guard kept the page in place.';
     });
@@ -246,8 +245,8 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   void _popDialogAndBottomSheet() {
-    ref.pop<void>();
-    ref.pop<void>();
+    context.pop<void>();
+    context.pop<void>();
 
     if (!mounted) return;
     setState(() {
@@ -256,7 +255,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   void _popLatestOverlayOnly() {
-    ref.pop<void>();
+    context.pop<void>();
 
     if (!mounted) return;
     setState(() {
@@ -265,7 +264,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   void _returnToLogin() {
-    ref.replaceAll(
+    context.replaceAll(
       RoutePage(
         child: const LoginView(isInitial: false),
         name: Routes.login,
@@ -274,7 +273,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   void _replaceAllWithFreshHome() {
-    ref.replaceAll(
+    context.replaceAll(
       RoutePage(
         child: const HomeView(),
         name: Routes.home,
@@ -284,7 +283,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
   }
 
   void _popHomeWithResult() {
-    ref.pop<String>(
+    context.pop<String>(
       result: 'Returned from Home at ${TimeOfDay.now().format(context)}',
     );
   }

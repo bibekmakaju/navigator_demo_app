@@ -1,0 +1,14 @@
+name: navigation_lints
+description: Analyzer plugin rules for the navigation router demo.
+version: 0.0.1
+publish_to: none
+
+environment:
+  sdk: ^3.10.0
+
+dependencies:
+  analysis_server_plugin: ^0.3.18
+  analyzer: ^13.3.0
+
+dev_dependencies:
+  lints: ^6.0.0

@@ -60,6 +60,21 @@ void main() {
     await expectLater(secondResult, completion(isNull));
   });
 
+  test('push preserves page arguments', () {
+    final router = RouteChangeNotifier();
+    final arguments = {'productId': 'SKU-1001'};
+
+    router.push<void>(
+      RoutePage<void>(
+        child: const SizedBox.shrink(),
+        name: Routes.product,
+        arguments: arguments,
+      ),
+    );
+
+    expect(router.pages.last.arguments, same(arguments));
+  });
+
   test('root page cannot be popped', () {
     final router = RouteChangeNotifier();
 

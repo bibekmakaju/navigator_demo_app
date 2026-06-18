@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:navigation_router_demo/app_router.dart';
 import 'package:navigation_router_demo/models/navigation_results.dart';
 import 'package:navigation_router_demo/pages/settings_view.dart';
 
-class ProductView extends ConsumerStatefulWidget {
+class ProductView extends StatefulWidget {
   const ProductView({
     super.key,
     required this.productId,
@@ -15,10 +14,10 @@ class ProductView extends ConsumerStatefulWidget {
   final String productName;
 
   @override
-  ConsumerState<ProductView> createState() => _ProductViewState();
+  State<ProductView> createState() => _ProductViewState();
 }
 
-class _ProductViewState extends ConsumerState<ProductView> {
+class _ProductViewState extends State<ProductView> {
   int _quantity = 1;
   String _nestedResult = 'No nested route result yet.';
 
@@ -29,7 +28,7 @@ class _ProductViewState extends ConsumerState<ProductView> {
       );
 
   Future<void> _openSettingsFromProduct() async {
-    final result = await ref.push<SettingsResult>(
+    final result = await context.push<SettingsResult>(
       RoutePage(
         child: const SettingsView(),
         name: Routes.settings,
@@ -46,7 +45,7 @@ class _ProductViewState extends ConsumerState<ProductView> {
   }
 
   Future<void> _pushAnotherProduct() async {
-    final result = await ref.push<ProductSelection>(
+    final result = await context.push<ProductSelection>(
       RoutePage(
         child: const ProductView(
           productId: 'SKU-3003',
@@ -66,11 +65,11 @@ class _ProductViewState extends ConsumerState<ProductView> {
   }
 
   void _returnSelection() {
-    ref.pop<ProductSelection>(result: _selection);
+    context.pop<ProductSelection>(result: _selection);
   }
 
   void _closeWithoutResult() {
-    ref.pop<void>();
+    context.pop<void>();
   }
 
   @override

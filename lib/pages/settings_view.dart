@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:navigation_router_demo/app_router.dart';
 import 'package:navigation_router_demo/models/navigation_results.dart';
 import 'package:navigation_router_demo/pages/home_view.dart';
 
-class SettingsView extends ConsumerStatefulWidget {
+class SettingsView extends StatefulWidget {
   const SettingsView({
     super.key,
     this.showSaveAction = true,
@@ -15,15 +14,15 @@ class SettingsView extends ConsumerStatefulWidget {
   final bool showReplaceHomeAction;
 
   @override
-  ConsumerState<SettingsView> createState() => _SettingsViewState();
+  State<SettingsView> createState() => _SettingsViewState();
 }
 
-class _SettingsViewState extends ConsumerState<SettingsView> {
+class _SettingsViewState extends State<SettingsView> {
   bool _darkTheme = false;
   bool _notifications = true;
 
   void _saveWithResult() {
-    ref.pop<SettingsResult>(
+    context.pop<SettingsResult>(
       result: SettingsResult(
         themeName: _darkTheme ? 'Dark' : 'Light',
         notificationsEnabled: _notifications,
@@ -32,11 +31,12 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   }
 
   void _closeWithoutResult() {
-    ref.pop<void>();
+    Navigator.pop(context);
+    // context.pop<void>();
   }
 
   void _replaceWithHome() {
-    ref.replaceCurrent(
+    context.replaceCurrent(
       RoutePage(
         child: const HomeView(),
         name: Routes.home,
@@ -46,7 +46,7 @@ class _SettingsViewState extends ConsumerState<SettingsView> {
   }
 
   void _removeThisPage() {
-    ref.removeLast(1);
+    context.removeLast(1);
   }
 
   @override

@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:navigation_router_demo/app_router.dart';
 import 'package:navigation_router_demo/pages/checkout_step_view.dart';
 import 'package:navigation_router_demo/pages/login_view.dart';
@@ -9,7 +8,7 @@ import 'package:navigation_router_demo/pages/overlay_toast_lab_view.dart';
 import 'package:navigation_router_demo/pages/product_view.dart';
 import 'package:navigation_router_demo/pages/settings_view.dart';
 
-class RouteLabView extends ConsumerStatefulWidget {
+class RouteLabView extends StatefulWidget {
   const RouteLabView({
     super.key,
     this.initialMessage,
@@ -18,10 +17,10 @@ class RouteLabView extends ConsumerStatefulWidget {
   final String? initialMessage;
 
   @override
-  ConsumerState<RouteLabView> createState() => _RouteLabViewState();
+  State<RouteLabView> createState() => _RouteLabViewState();
 }
 
-class _RouteLabViewState extends ConsumerState<RouteLabView> {
+class _RouteLabViewState extends State<RouteLabView> {
   late String _lastEvent;
 
   @override
@@ -32,7 +31,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
   }
 
   void _replaceWithSettings() {
-    ref.replaceCurrent(
+    context.replaceCurrent(
       RoutePage(
         child: const SettingsView(showReplaceHomeAction: true),
         name: Routes.settings,
@@ -42,7 +41,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
   }
 
   void _replaceWithProduct() {
-    ref.replaceCurrent(
+    context.replaceCurrent(
       RoutePage(
         child: const ProductView(
           productId: 'LAB-4004',
@@ -55,7 +54,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
   }
 
   Future<void> _startCheckoutFlow() async {
-    final result = await ref.push<String>(
+    final result = await context.push<String>(
       CheckoutStepView.page(
         CheckoutStep.cart,
         initialMessage: 'Checkout flow started from Route Lab.',
@@ -71,7 +70,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
 
   void _openOverlayToastLab() {
     unawaited(
-      ref.push<void>(
+      context.push<void>(
         OverlayToastLabView.page(transitionType: TransitionType.fade),
       ),
     );
@@ -83,7 +82,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
 
   Future<void> _pushFullCheckoutStack() async {
     unawaited(
-      ref.push<String>(
+      context.push<String>(
         CheckoutStepView.page(
           CheckoutStep.cart,
           initialMessage: 'Cart was pushed as the checkout root.',
@@ -91,7 +90,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
       ),
     );
     unawaited(
-      ref.push<String>(
+      context.push<String>(
         CheckoutStepView.page(
           CheckoutStep.address,
           initialMessage: 'Address was pushed by a batch stack action.',
@@ -99,7 +98,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
       ),
     );
     unawaited(
-      ref.push<String>(
+      context.push<String>(
         CheckoutStepView.page(
           CheckoutStep.payment,
           initialMessage: 'Payment was pushed by a batch stack action.',
@@ -107,7 +106,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
       ),
     );
     unawaited(
-      ref.push<String>(
+      context.push<String>(
         CheckoutStepView.page(
           CheckoutStep.review,
           initialMessage: 'Review is now on top of a deep checkout stack.',
@@ -126,7 +125,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
 
   Future<void> _pushTwoThenRemoveTwo() async {
     unawaited(
-      ref.push<void>(
+      context.push<void>(
         RoutePage(
           child: const SettingsView(showSaveAction: false),
           name: Routes.settings,
@@ -134,7 +133,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
       ),
     );
     unawaited(
-      ref.push<void>(
+      context.push<void>(
         RoutePage(
           child: const ProductView(
             productId: 'LAB-5005',
@@ -146,9 +145,9 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
     );
 
     await Future<void>.delayed(const Duration(milliseconds: 250));
-    ref.removeLast(2);
-
     if (!mounted) return;
+
+    context.removeLast(2);
     setState(() {
       _lastEvent = 'Pushed Settings + Product, then removed both by count.';
     });
@@ -156,7 +155,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
 
   Future<void> _pushTwoThenPopUntilLab() async {
     unawaited(
-      ref.push<void>(
+      context.push<void>(
         RoutePage(
           child: const SettingsView(showSaveAction: false),
           name: Routes.settings,
@@ -164,7 +163,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
       ),
     );
     unawaited(
-      ref.push<void>(
+      context.push<void>(
         RoutePage(
           child: const ProductView(
             productId: 'LAB-6006',
@@ -176,9 +175,9 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
     );
 
     await Future<void>.delayed(const Duration(milliseconds: 250));
-    final found = ref.popUntilRouteName(Routes.lab);
-
     if (!mounted) return;
+
+    final found = context.popUntilRouteName(Routes.lab);
     setState(() {
       _lastEvent = found
           ? 'Pushed Settings + Product, then popped back until Lab.'
@@ -188,7 +187,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
 
   Future<void> _pushTwoThenReplaceUntilSettings() async {
     unawaited(
-      ref.push<void>(
+      context.push<void>(
         RoutePage(
           child: const SettingsView(showSaveAction: false),
           name: Routes.settings,
@@ -196,7 +195,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
       ),
     );
     unawaited(
-      ref.push<void>(
+      context.push<void>(
         RoutePage(
           child: const ProductView(
             productId: 'LAB-7007',
@@ -208,7 +207,9 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
     );
 
     await Future<void>.delayed(const Duration(milliseconds: 250));
-    ref.replaceUntilRouteName(
+    if (!mounted) return;
+
+    context.replaceUntilRouteName(
       Routes.settings,
       RoutePage(
         child: const RouteLabView(
@@ -222,11 +223,8 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
   }
 
   void _showStackDialog() {
-    final routeNames = ref
-        .read(routeProvider)
-        .pages
-        .map((page) => page.name ?? 'unnamed')
-        .join(' -> ');
+    final routeNames =
+        context.routePages.map((page) => page.name ?? 'unnamed').join(' -> ');
 
     showDialog<void>(
       context: context,
@@ -291,7 +289,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
   }
 
   void _tryReplaceUntilMissingRoute() {
-    final found = ref.replaceUntilRouteName(
+    final found = context.replaceUntilRouteName(
       'missing-route',
       CheckoutStepView.page(CheckoutStep.success),
     );
@@ -304,7 +302,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
   }
 
   void _replaceAllWithLogin() {
-    ref.replaceAll(
+    context.replaceAll(
       RoutePage(
         child: const LoginView(isInitial: false),
         name: Routes.login,
@@ -314,7 +312,7 @@ class _RouteLabViewState extends ConsumerState<RouteLabView> {
   }
 
   void _popWithResult() {
-    ref.pop<String>(result: 'Route Lab returned a result.');
+    context.pop<String>(result: 'Route Lab returned a result.');
   }
 
   @override

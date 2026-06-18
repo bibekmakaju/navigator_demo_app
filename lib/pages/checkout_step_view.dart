@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:navigation_router_demo/app_router.dart';
 
 enum CheckoutStep { cart, address, payment, review, success }
@@ -57,7 +56,7 @@ extension CheckoutStepInfo on CheckoutStep {
   }
 }
 
-class CheckoutStepView extends ConsumerStatefulWidget {
+class CheckoutStepView extends StatefulWidget {
   const CheckoutStepView({
     super.key,
     required this.step,
@@ -83,10 +82,10 @@ class CheckoutStepView extends ConsumerStatefulWidget {
   }
 
   @override
-  ConsumerState<CheckoutStepView> createState() => _CheckoutStepViewState();
+  State<CheckoutStepView> createState() => _CheckoutStepViewState();
 }
 
-class _CheckoutStepViewState extends ConsumerState<CheckoutStepView> {
+class _CheckoutStepViewState extends State<CheckoutStepView> {
   late String _lastEvent;
 
   @override
@@ -99,7 +98,7 @@ class _CheckoutStepViewState extends ConsumerState<CheckoutStepView> {
     final next = widget.step.next;
     if (next == null) return;
 
-    final result = await ref.push<String>(
+    final result = await context.push<String>(
       CheckoutStepView.page(
         next,
         initialMessage: 'Pushed from ${widget.step.title}.',
@@ -117,7 +116,7 @@ class _CheckoutStepViewState extends ConsumerState<CheckoutStepView> {
     final next = widget.step.next;
     if (next == null) return;
 
-    ref.replaceCurrent(
+    context.replaceCurrent(
       CheckoutStepView.page(
         next,
         initialMessage: '${widget.step.title} was replaced by ${next.title}.',
@@ -128,7 +127,7 @@ class _CheckoutStepViewState extends ConsumerState<CheckoutStepView> {
 
   void _pushDuplicateCart() {
     unawaited(
-      ref.push<String>(
+      context.push<String>(
         CheckoutStepView.page(
           CheckoutStep.cart,
           initialMessage: 'This is another Cart page with the same route name.',
@@ -142,11 +141,11 @@ class _CheckoutStepViewState extends ConsumerState<CheckoutStepView> {
   }
 
   void _removeThisPage() {
-    ref.removeLast(1);
+    context.removeLast(1);
   }
 
   void _popUntilCart() {
-    final found = ref.popUntilRouteName(Routes.cart);
+    final found = context.popUntilRouteName(Routes.cart);
     if (!mounted) return;
 
     setState(() {
@@ -157,7 +156,7 @@ class _CheckoutStepViewState extends ConsumerState<CheckoutStepView> {
   }
 
   void _replaceUntilAddressWithReview() {
-    final found = ref.replaceUntilRouteName(
+    final found = context.replaceUntilRouteName(
       Routes.address,
       CheckoutStepView.page(
         CheckoutStep.review,
@@ -174,7 +173,7 @@ class _CheckoutStepViewState extends ConsumerState<CheckoutStepView> {
   }
 
   void _replaceUntilMissingRoute() {
-    final found = ref.replaceUntilRouteName(
+    final found = context.replaceUntilRouteName(
       'missing-route',
       CheckoutStepView.page(CheckoutStep.success),
     );
@@ -187,7 +186,7 @@ class _CheckoutStepViewState extends ConsumerState<CheckoutStepView> {
   }
 
   void _replaceAllWithSuccess() {
-    ref.replaceAll(
+    context.replaceAll(
       CheckoutStepView.page(
         CheckoutStep.success,
         initialMessage: 'The whole stack was replaced with Success.',
@@ -197,7 +196,7 @@ class _CheckoutStepViewState extends ConsumerState<CheckoutStepView> {
   }
 
   void _replaceAllWithCart() {
-    ref.replaceAll(
+    context.replaceAll(
       CheckoutStepView.page(
         CheckoutStep.cart,
         initialMessage: 'Checkout restarted from Success.',
@@ -207,19 +206,16 @@ class _CheckoutStepViewState extends ConsumerState<CheckoutStepView> {
   }
 
   void _popWithResult() {
-    ref.pop<String>(result: '${widget.step.title} completed.');
+    context.pop<String>(result: '${widget.step.title} completed.');
   }
 
   void _popWithoutResult() {
-    ref.pop<void>();
+    context.pop<void>();
   }
 
   void _showStackDialog() {
-    final routeNames = ref
-        .read(routeProvider)
-        .pages
-        .map((page) => page.name ?? 'unnamed')
-        .join(' -> ');
+    final routeNames =
+        context.routePages.map((page) => page.name ?? 'unnamed').join(' -> ');
 
     showDialog<void>(
       context: context,

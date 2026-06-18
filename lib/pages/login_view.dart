@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:navigation_router_demo/app_router.dart';
 import 'package:navigation_router_demo/pages/home_view.dart';
 
-class LoginView extends ConsumerStatefulWidget {
+class LoginView extends StatefulWidget {
   const LoginView({
     super.key,
     required this.isInitial,
@@ -12,14 +11,14 @@ class LoginView extends ConsumerStatefulWidget {
   final bool isInitial;
 
   @override
-  ConsumerState<LoginView> createState() => _LoginViewState();
+  State<LoginView> createState() => _LoginViewState();
 }
 
-class _LoginViewState extends ConsumerState<LoginView> {
+class _LoginViewState extends State<LoginView> {
   String _lastResult = 'No page has returned a result yet.';
 
   Future<void> _pushHomeAndWait() async {
-    final result = await ref.push<String>(
+    final result = await context.push<String>(
       RoutePage(
         child: const HomeView(canReturnToLogin: true),
         name: Routes.home,
@@ -34,7 +33,7 @@ class _LoginViewState extends ConsumerState<LoginView> {
   }
 
   void _replaceWithHome() {
-    ref.replaceAll(
+    context.replaceAll(
       RoutePage(
         child: const HomeView(),
         name: Routes.home,

@@ -1,1 +1,14 @@
 include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - tool/analysis_server_plugin_patched/**
+
+plugins:
+  dependency_overrides:
+    analysis_server_plugin:
+      path: tool/analysis_server_plugin_patched
+  navigation_lints:
+    path: tool/navigation_lints
+    diagnostics:
+      no_navigator_pop: warning
